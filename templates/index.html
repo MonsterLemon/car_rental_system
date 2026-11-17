@@ -5,129 +5,266 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Car Rental Management System</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1, h2 { color: #333; text-align: center; }
-        .section { margin-bottom: 30px; padding: 15px; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; }
-        input, button { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { background-color: #007BFF; color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { background-color: #0056b3; }
-        ul { padding-left: 20px; }
-        li { margin-bottom: 5px; }
-        .success { color: green; font-weight: bold; }
-        .error { color: red; font-weight: bold; }
+        .tab-buttons { display: flex; justify-content: center; margin-bottom: 25px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .tab-buttons button { background: #e0e0e0; border: none; padding: 10px 20px; margin: 0 5px; cursor: pointer; font-weight: bold; border-radius: 5px; }
+        .tab-buttons button.active { background: #007BFF; color: white; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .btn-primary { background-color: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-primary:hover { background-color: #218838; }
+        .btn-info { background-color: #007BFF; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .card { background: #fafafa; padding: 15px; margin-bottom: 10px; border-left: 5px solid #007BFF; border-radius: 4px; }
+        .success { color: green; font-weight: bold; text-align: center; }
+        .error { color: red; font-weight: bold; text-align: center; }
+        .logout-btn { background-color: #dc3545; color: white; width: auto; padding: 5px 15px; float: right; cursor: pointer; border: none; border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>Car Rental Management System</h1>
-    <p style="text-align: center; color: #666;">Connected to Live API: <span id="api-status" class="success">Checking...</span></p>
 
-    <!-- 1. Available Cars Section -->
-    <div class="section">
-        <h2>Available Cars</h2>
-        <button onclick="loadAvailableCars()">Refresh Available Cars</button>
-        <ul id="car-list">Click refresh to load cars...</ul>
+    <!-- Role Selection Tabs -->
+    <div id="auth-tabs" class="tab-buttons">
+        <button class="active" onclick="switchTab('customer-login')">Customer Login</button>
+        <button onclick="switchTab('customer-signup')">Customer Sign Up</button>
+        <button onclick="switchTab('admin-login')">Admin Login</button>
     </div>
 
-    <!-- 2. Add Customer Section -->
-    <div class="section">
-        <h2>Add New Customer</h2>
-        <input type="text" id="f_name" placeholder="First Name">
-        <input type="text" id="l_name" placeholder="Last Name">
-        <input type="email" id="email" placeholder="Email">
-        <input type="text" id="phone" placeholder="Phone">
-        <input type="text" id="license" placeholder="Driver License Number">
-        <input type="text" id="address" placeholder="Address">
-        <button onclick="addCustomer()">Add Customer</button>
-        <p id="customer-msg"></p>
+    <!-- 1. Customer Login Panel -->
+    <div id="customer-login" class="panel active">
+        <h2>Customer Login</h2>
+        <input type="email" id="c-login-email" placeholder="Email">
+        <input type="password" id="c-login-pass" placeholder="Password">
+        <button class="btn-primary" onclick="customerLogin()">Login</button>
+        <p id="c-login-msg"></p>
     </div>
 
-    <!-- 3. Revenue Report Section -->
-    <div class="section">
-        <h2>Monthly Revenue Report</h2>
-        <button onclick="loadRevenueReport()">Load Revenue Report</button>
-        <ul id="report-list">Click to load report...</ul>
+    <!-- 2. Customer Sign Up Panel -->
+    <div id="customer-signup" class="panel">
+        <h2>Customer Sign Up</h2>
+        <input type="text" id="s-fname" placeholder="First Name">
+        <input type="text" id="s-lname" placeholder="Last Name">
+        <input type="email" id="s-email" placeholder="Email">
+        <input type="password" id="s-pass" placeholder="Password">
+        <input type="text" id="s-phone" placeholder="Phone">
+        <input type="text" id="s-license" placeholder="Driver License Number">
+        <input type="text" id="s-address" placeholder="Address">
+        <button class="btn-primary" onclick="customerSignup()">Register</button>
+        <p id="s-msg"></p>
     </div>
+
+    <!-- 3. Admin Login Panel -->
+    <div id="admin-login" class="panel">
+        <h2>Admin Login</h2>
+        <input type="text" id="a-user" placeholder="Username (admin)">
+        <input type="password" id="a-pass" placeholder="Password (123)">
+        <button class="btn-primary" onclick="adminLogin()">Admin Login</button>
+        <p id="a-login-msg"></p>
+    </div>
+
+    <!-- 4. Customer Dashboard (Hidden by default) -->
+    <div id="customer-dashboard" class="panel">
+        <button class="logout-btn" onclick="logout()">Logout</button>
+        <h2>Customer Dashboard</h2>
+        <h3>Available Cars for Rent</h3>
+        <button class="btn-info" onclick="loadAvailableCars()">Refresh Available Cars</button>
+        <div id="car-list" style="margin-top: 15px;">Loading cars...</div>
+        
+        <hr style="margin: 25px 0;">
+        <h3>Rent a Car</h3>
+        <input type="number" id="rent-car-id" placeholder="Enter Car ID">
+        <input type="date" id="rent-date" placeholder="Rental Date">
+        <input type="date" id="return-date" placeholder="Return Date">
+        <input type="number" id="rent-days" placeholder="Total Rental Days">
+        <button class="btn-primary" onclick="bookCar()">Confirm Booking</button>
+        <p id="rent-msg"></p>
+    </div>
+
+    <!-- 5. Admin Dashboard (Hidden by default) -->
+    <div id="admin-dashboard" class="panel">
+        <button class="logout-btn" onclick="logout()">Logout</button>
+        <h2>Admin Control Panel</h2>
+        
+        <!-- Add Car -->
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+            <h3>Add New Car</h3>
+            <select id="car-branch">
+                <option value="1">Branch 1: Central Hub (Dhaka)</option>
+                <option value="2">Branch 2: Airport Branch (Dhaka)</option>
+            </select>
+            <input type="text" id="car-make" placeholder="Make (e.g. Toyota)">
+            <input type="text" id="car-model" placeholder="Model (e.g. Premio)">
+            <input type="number" id="car-year" placeholder="Year (e.g. 2023)">
+            <input type="text" id="car-plate" placeholder="License Plate">
+            <input type="number" id="car-rate" placeholder="Daily Rate ($)">
+            <button class="btn-primary" onclick="addCar()">Add Car to Database</button>
+            <p id="admin-car-msg"></p>
+        </div>
+
+        <!-- Update Price -->
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+            <h3>Update Car Daily Rate</h3>
+            <input type="number" id="update-car-id" placeholder="Car ID">
+            <input type="number" id="update-car-rate" placeholder="New Daily Rate ($)">
+            <button class="btn-info" onclick="updatePrice()">Update Price</button>
+            <p id="admin-price-msg"></p>
+        </div>
+
+        <!-- Revenue Report -->
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 5px;">
+            <h3>Monthly Revenue Report</h3>
+            <button class="btn-info" onclick="loadRevenueReport()">Load Report</button>
+            <div id="report-list" style="margin-top: 10px;">Click load report...</div>
+        </div>
+    </div>
+
 </div>
 
 <script>
-    // আপনার Render-এর লাইভ API লিংক এখানে সেট করা আছে
-    const API_URL = "https://car-rental-system-8zif.onrender.com";
+    let loggedInCustomerID = null;
 
-    // Check API Status on load
-    fetch(API_URL + "/")
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById("api-statusinnerText = "Online & Connected";
-        })
-        .catch(err => {
-            document.getElementById("api-status").innerText = "Offline / Connection Failed";
-            document.getElementById("api-status").className = "error";
-        });
-
-    // 1. Load Available Cars
-    function loadAvailableCars() {
-        fetch(API_URL + "/api/cars/available")
-            .then(res => res.json())
-            .then(data => {
-                const list = document.getElementById("car-list");
-                list.innerHTML = "";
-                if(data.length === 0) {
-                    list.innerHTML = "<li>No cars available right now.</li>";
-                    return;
-                }
-                data.forEach(car => {
-                    list.innerHTML += `<li><b>Car ID:</b> ${car.Car_ID} | ${car.Make} ${car.Model} (${car.Year}) | Plate: ${car.License_Plate} | Rate: $${car.Daily_Rate}/day | Branch: ${car.Branch_Name}</li>`;
-                });
-            });
+    function switchTab(tabId) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-buttons button').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        event.target.classList.add('active');
     }
 
-    // 2. Add Customer
-    function addCustomer() {
-        const data = {
-            first_name: document.getElementById("f_name").value,
-            last_name: document.getElementById("l_name").value,
-            email: document.getElementById("email").value,
-            phone: document.getElementById("phone").value,
-            license: document.getElementById("license").value,
-            address: document.getElementById("address").value
-        };
-
-        fetch(API_URL + "/api/customers", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        })
-        .then(res => res.json())
-        .then(response => {
-            const msg = document.getElementById("customer-msg");
-            if(response.status === "success") {
-                msg.className = "success";
-                msg.innerText = response.message;
+    // Customer Login
+    function customerLogin() {
+        const data = { email: document.getElementById('c-login-email').value, password: document.getElementById('c-login-pass').value };
+        fetch('/api/login/customer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+        .then(res => res.json()).then(res => {
+            if(res.status === 'success') {
+                loggedInCustomerID = res.customer_id;
+                document.getElementById('auth-tabs').style.display = 'none';
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                document.getElementById('customer-dashboard').classList.add('active');
+                loadAvailableCars();
             } else {
-                msg.className = "error";
-                msg.innerText = "Error: " + response.message;
+                document.getElementById('c-login-msg').className = 'error';
+                document.getElementById('c-login-msg').innerText = res.message;
             }
         });
     }
 
-    // 3. Load Revenue Report
-    function loadRevenueReport() {
-        fetch(API_URL + "/api/reports/revenue")
-            .then(res => res.json())
-            .then(data => {
-                const list = document.getElementById("report-list");
-                list.innerHTML = "";
-                if(data.length === 0) {
-                    list.innerHTML = "<li>No rental transactions yet.</li>";
-                    return;
-                }
-                data.forEach(rep => {
-                    list.innerHTML += `<li><b>Month:</b> ${rep.Rental_Month} | <b>Total Rentals:</b> ${rep.Total_Rentals} | <b>Gross Revenue:</b> $${rep.Gross_Revenue}</li>`;
-                });
+    // Customer Signup
+    function customerSignup() {
+        const data = {
+            first_name: document.getElementById('s-fname').value,
+            last_name: document.getElementById('s-lname').value,
+            email: document.getElementById('s-email').value,
+            password: document.getElementById('s-pass').value,
+            phone: document.getElementById('s-phone').value,
+            license: document.getElementById('s-license').value,
+            address: document.getElementById('s-address').value
+        };
+        fetch('/api/signup/customer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+        .then(res => res.json()).then(res => {
+            const msg = document.getElementById('s-msg');
+            msg.className = res.status === 'success' ? 'success' : 'error';
+            msg.innerText = res.message;
+        });
+    }
+
+    // Admin Login
+    function adminLogin() {
+        const data = { username: document.getElementById('a-user').value, password: document.getElementById('a-pass').value };
+        fetch('/api/login/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+        .then(res => res.json()).then(res => {
+            if(res.status === 'success') {
+                document.getElementById('auth-tabs').style.display = 'none';
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                document.getElementById('admin-dashboard').classList.add('active');
+            } else {
+                document.getElementById('a-login-msg').className = 'error';
+                document.getElementById('a-login-msg').innerText = res.message;
+            }
+        });
+    }
+
+    function logout() {
+        loggedInCustomerID = null;
+        document.getElementById('auth-tabs').style.display = 'flex';
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('customer-login').classList.add('active');
+    }
+
+    // Load Cars
+    function loadAvailableCars() {
+        fetch('/api/cars/available').then(res => res.json()).then(data => {
+            const list = document.getElementById('car-list');
+            list.innerHTML = data.length === 0 ? '<p>No cars available.</p>' : '';
+            data.forEach(car => {
+                list.innerHTML += `<div class="card"><b>Car ID: ${car.Car_ID}</b> | ${car.Make} ${car.Model} (${car.Year})<br>Plate: ${car.License_Plate} | Rate: $${car.Daily_Rate}/day | Branch: ${car.Branch_Name}</div>`;
             });
+        });
+    }
+
+    // Book Car
+    function bookCar() {
+        const data = {
+            car_id: document.getElementById('rent-car-id').value,
+            customer_id: loggedInCustomerID,
+            rental_date: document.getElementById('rent-date').value,
+            return_date: document.getElementById('return-date').value,
+            days: document.getElementById('rent-days').value
+        };
+        fetch('/api/rentals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+        .then(res => res.json()).then(res => {
+            const msg = document.getElementById('rent-msg');
+            msg.className = res.status === 'success' ? 'success' : 'error';
+            msg.innerText = res.status === 'success' ? `Car booked successfully! Total Cost: $${res.total_cost}` : res.message;
+            if(res.status === 'success') loadAvailableCars();
+        });
+    }
+
+    // Admin: Add Car
+    function addCar() {
+        const data = {
+            branch_id: document.getElementById('car-branch').value,
+            make: document.getElementById('car-make').value,
+            model: document.getElementById('car-model').value,
+            year: document.getElementById('car-year').value,
+            license_plate: document.getElementById('car-plate').value,
+            daily_rate: document.getElementById('car-rate').value
+        };
+        fetch('/api/admin/cars', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+        .then(res => res.json()).then(res => {
+            const msg = document.getElementById('admin-car-msg');
+            msg.className = res.status === 'success' ? 'success' : 'error';
+            msg.innerText = res.message;
+        });
+    }
+
+    // Admin: Update Price
+    function updatePrice() {
+        const data = {
+            car_id: document.getElementById('update-car-id').value,
+            new_rate: document.getElementById('update-car-rate').value
+        };
+        fetch('/api/admin/cars/price', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+        .then(res => res.json()).then(res => {
+            const msg = document.getElementById('admin-price-msg');
+            msg.className = res.status === 'success' ? 'success' : 'error';
+            msg.innerText = res.message;
+        });
+    }
+
+    // Admin: Revenue Report
+    function loadRevenueReport() {
+        fetch('/api/reports/revenue').then(res => res.json()).then(data => {
+            const list = document.getElementById('report-list');
+            list.innerHTML = data.length === 0 ? '<p>No revenue data.</p>' : '';
+            data.forEach(rep => {
+                list.innerHTML += `<div class="card"><b>Month:</b> ${rep.Rental_Month} | <b>Total Rentals:</b> ${rep.Total_Rentals} | <b>Gross Revenue:</b> $${rep.Gross_Revenue}</div>`;
+            });
+        });
     }
 </script>
 

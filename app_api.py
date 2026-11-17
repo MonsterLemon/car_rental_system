@@ -12,7 +12,82 @@ def get_db_connection():
 @app.route('/')
 def home():
     return render_template('index.html')
-# 1. Get All Available Cars
+
+# --- 1. AUTHENTICATION (Login & Sign Up) ---
+
+@app.route('/api/login/admin', methods=['POST'])
+def admin_login():
+    data = request.json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM Admin WHERE Username = ? AND Password = ?", (data.get('username'), data.get('password')))
+    admin = cursor.fetchone()
+    conn.close()
+    if admin:
+        return jsonify({"status": "success", "message": "Admin login successful"})
+    return jsonify({"status": "error", "message": "Invalid admin credentials"}), 401
+
+@app.route('/api/login/customer', methods=['POST'])
+def customer_login():
+    data = request.json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM Customer WHERE Email = ? AND Password = ?", (data.get('email'), data.get('password')))
+    customer = cursor.fetchone()
+    conn.close()
+    if customer:
+        return jsonify({"status": "success", "customer_id": customer["Customer_ID"], "name": customer["First_Name"]})
+    return jsonify({"status": "error", "message": "Invalid email or password"}), 401
+
+@app.route('/api/signup/customer', methods=['POST'])
+def customer_signup():
+    data = request.json
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO Customer (First_Name, Last_Name, Email, Password, Phone, Driver_License_Number, Address)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (data['first_name'], data['last_name'], data['email'], data['password'], data['phone'], data['license'], data['address']))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success", "message": "Customer registered successfully!"}), 201
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+# --- 2. ADMIN FEATURES (Add Car, Price Update, etc.) ---
+
+@app.route('/api/admin/cars', methods=['POST'])
+def add_car():
+    data = request.json
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO Car (Branch_ID, Make, Model, Year, License_Plate, Daily_Rate, Status)
+            VALUES (?, ?, ?, ?, ?, ?, 'Available')
+        ''', (data['branch_id'], data['make'], data['model'], data['year'], data['license_plate'], data['daily_rate']))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success", "message": "Car added successfully!"}), 201
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+@app.route('/api/admin/cars/price', methods=['PUT'])
+def update_car_price():
+    data = request.json
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE Car SET Daily_Rate = ? WHERE Car_ID = ?", (data['new_rate'], data['car_id']))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success", "message": "Car price updated successfully!"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+# --- 3. CUSTOMER & GENERAL FEATURES ---
+
 @app.route('/api/cars/available', methods=['GET'])
 def get_available_cars():
     conn = get_db_connection()
@@ -27,60 +102,34 @@ def get_available_cars():
     conn.close()
     return jsonify(cars)
 
-# 2. Add New Customer
-@app.route('/api/customers', methods=['POST'])
-def add_customer():
+@app.route('/api/rentals', methods=['POST'])
+def rent_car():
     data = request.json
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO Customer (First_Name, Last_Name, Email, Phone, Driver_License_Number, Address)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (data['first_name'], data['last_name'], data['email'], data['phone'], data['license'], data['address']))
-        conn.commit()
-        conn.close()
-        return jsonify({"status": "success", "message": "Customer added successfully!"}), 201
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 400
-
-# 3. Rent a Car
-@app.route('/api/rentals', methods=['POST'])
-def rent_car():
-    data = request.json
-    car_id = data['car_id']
-    customer_id = data['customer_id']
-    rental_date = data['rental_date']
-    return_date = data['return_date']
-    days = int(data['days'])
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT Daily_Rate, Status FROM Car WHERE Car_ID = ?", (car_id,))
-    car = cursor.fetchone()
-    
-    if not car or car['Status'] != 'Available':
-        conn.close()
-        return jsonify({"status": "error", "message": "Car not available or found!"}), 400
         
-    total_cost = car['Daily_Rate'] * days
+        cursor.execute("SELECT Daily_Rate, Status FROM Car WHERE Car_ID = ?", (data['car_id'],))
+        car = cursor.fetchone()
+        
+        if not car or car['Status'] != 'Available':
+            conn.close()
+            return jsonify({"status": "error", "message": "Car not available!"}), 400
+            
+        total_cost = car['Daily_Rate'] * int(data['days'])
 
-    try:
         cursor.execute('''
             INSERT INTO Rental_Transaction (Car_ID, Customer_ID, Rental_Date, Return_Date, Total_Cost, Payment_Status)
             VALUES (?, ?, ?, ?, ?, 'Paid')
-        ''', (car_id, customer_id, rental_date, return_date, total_cost))
+        ''', (data['car_id'], data['customer_id'], data['rental_date'], data['return_date'], total_cost))
         
-        cursor.execute("UPDATE Car SET Status = 'Rented' WHERE Car_ID = ?", (car_id,))
+        cursor.execute("UPDATE Car SET Status = 'Rented' WHERE Car_ID = ?", (data['car_id'],))
         conn.commit()
         conn.close()
         return jsonify({"status": "success", "total_cost": total_cost}), 201
     except Exception as e:
-        conn.close()
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# 4. Monthly Revenue Report
 @app.route('/api/reports/revenue', methods=['GET'])
 def revenue_report():
     conn = get_db_connection()
