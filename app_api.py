@@ -149,3 +149,17 @@ def revenue_report():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+
+    # সমস্ত গাড়ির তালিকা (স্ট্যাটাস ও প্রাইসসহ) দেখার জন্য অ্যাডমিন API
+@app.route('/api/admin/cars/all', methods=['GET'])
+def get_all_cars_admin():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT c.Car_ID, c.Make, c.Model, c.Year, c.License_Plate, c.Daily_Rate, c.Status, b.Branch_Name
+        FROM Car c
+        JOIN Branch b ON c.Branch_ID = b.Branch_ID
+    ''')
+    cars = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return jsonify(cars)
