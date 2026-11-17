@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import sqlite3
 
 app = Flask(__name__)
@@ -11,8 +11,7 @@ def get_db_connection():
 
 @app.route('/')
 def home():
-    return jsonify({"message": "Car Rental API is running successfully!"})
-
+    return render_template('index.html')
 # 1. Get All Available Cars
 @app.route('/api/cars/available', methods=['GET'])
 def get_available_cars():

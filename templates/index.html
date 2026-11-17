@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Rental Management System</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; text-align: center; }
+        .section { margin-bottom: 30px; padding: 15px; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; }
+        input, button { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #007BFF; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 5px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Car Rental Management System</h1>
+    <p style="text-align: center; color: #666;">Connected to Live API: <span id="api-status" class="success">Checking...</span></p>
+
+    <!-- 1. Available Cars Section -->
+    <div class="section">
+        <h2>Available Cars</h2>
+        <button onclick="loadAvailableCars()">Refresh Available Cars</button>
+        <ul id="car-list">Click refresh to load cars...</ul>
+    </div>
+
+    <!-- 2. Add Customer Section -->
+    <div class="section">
+        <h2>Add New Customer</h2>
+        <input type="text" id="f_name" placeholder="First Name">
+        <input type="text" id="l_name" placeholder="Last Name">
+        <input type="email" id="email" placeholder="Email">
+        <input type="text" id="phone" placeholder="Phone">
+        <input type="text" id="license" placeholder="Driver License Number">
+        <input type="text" id="address" placeholder="Address">
+        <button onclick="addCustomer()">Add Customer</button>
+        <p id="customer-msg"></p>
+    </div>
+
+    <!-- 3. Revenue Report Section -->
+    <div class="section">
+        <h2>Monthly Revenue Report</h2>
+        <button onclick="loadRevenueReport()">Load Revenue Report</button>
+        <ul id="report-list">Click to load report...</ul>
+    </div>
+</div>
+
+<script>
+    // আপনার Render-এর লাইভ API লিংক এখানে সেট করা আছে
+    const API_URL = "https://car-rental-system-8zif.onrender.com";
+
+    // Check API Status on load
+    fetch(API_URL + "/")
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("api-statusinnerText = "Online & Connected";
+        })
+        .catch(err => {
+            document.getElementById("api-status").innerText = "Offline / Connection Failed";
+            document.getElementById("api-status").className = "error";
+        });
+
+    // 1. Load Available Cars
+    function loadAvailableCars() {
+        fetch(API_URL + "/api/cars/available")
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById("car-list");
+                list.innerHTML = "";
+                if(data.length === 0) {
+                    list.innerHTML = "<li>No cars available right now.</li>";
+                    return;
+                }
+                data.forEach(car => {
+                    list.innerHTML += `<li><b>Car ID:</b> ${car.Car_ID} | ${car.Make} ${car.Model} (${car.Year}) | Plate: ${car.License_Plate} | Rate: $${car.Daily_Rate}/day | Branch: ${car.Branch_Name}</li>`;
+                });
+            });
+    }
+
+    // 2. Add Customer
+    function addCustomer() {
+        const data = {
+            first_name: document.getElementById("f_name").value,
+            last_name: document.getElementById("l_name").value,
+            email: document.getElementById("email").value,
+            phone: document.getElementById("phone").value,
+            license: document.getElementById("license").value,
+            address: document.getElementById("address").value
+        };
+
+        fetch(API_URL + "/api/customers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(response => {
+            const msg = document.getElementById("customer-msg");
+            if(response.status === "success") {
+                msg.className = "success";
+                msg.innerText = response.message;
+            } else {
+                msg.className = "error";
+                msg.innerText = "Error: " + response.message;
+            }
+        });
+    }
+
+    // 3. Load Revenue Report
+    function loadRevenueReport() {
+        fetch(API_URL + "/api/reports/revenue")
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById("report-list");
+                list.innerHTML = "";
+                if(data.length === 0) {
+                    list.innerHTML = "<li>No rental transactions yet.</li>";
+                    return;
+                }
+                data.forEach(rep => {
+                    list.innerHTML += `<li><b>Month:</b> ${rep.Rental_Month} | <b>Total Rentals:</b> ${rep.Total_Rentals} | <b>Gross Revenue:</b> $${rep.Gross_Revenue}</li>`;
+                });
+            });
+    }
+</script>
+
+</body>
+</html>
