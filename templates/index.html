@@ -110,6 +110,19 @@
             <div id="admin-car-list" style="margin-top: 10px; max-height: 200px; overflow-y: auto;">Click load to view all cars...</div>
         </div>
 
+        <!-- Manual Car Status Update (NEW FEATURE) -->
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+            <h3>Update Car Status Manually</h3>
+            <input type="number" id="status-car-id" placeholder="Car ID">
+            <select id="status-new-value">
+                <option value="Available">Available (Returned)</option>
+                <option value="Rented">Rented (Booked/Extended)</option>
+                <option value="Maintenance">Maintenance</option>
+            </select>
+            <button class="btn-info" onclick="updateCarStatus()">Change Car Status</button>
+            <p id="admin-status-msg"></p>
+        </div>
+
         <!-- Add Car -->
         <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
             <h3>Add New Car</h3>
@@ -196,6 +209,24 @@
         });
     }
 
+    // Admin: Update Car Status Manually
+    function updateCarStatus() {
+        const data = {
+            car_id: document.getElementById('status-car-id').value,
+            status: document.getElementById('status-new-value').value
+        };
+        fetch('/api/admin/cars/status', { 
+            method: 'PUT', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(data) 
+        })
+        .then(res => res.json()).then(res => {
+            const msg = document.getElementById('admin-status-msg');
+            msg.className = res.status === 'success' ? 'success' : 'error';
+            msg.innerText = res.message;
+            if(res.status === 'success') loadAdminCarList(); // Refresh the list
+        });
+    }
     function adminLogin() {
         const data = { username: document.getElementById('a-user').value, password: document.getElementById('a-pass').value };
         fetch('/api/login/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })

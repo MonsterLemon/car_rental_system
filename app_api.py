@@ -166,3 +166,24 @@ def revenue_report():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+
+    
+# Admin: Manual Car Status Update (Available <-> Rented)
+@app.route('/api/admin/cars/status', methods=['PUT'])
+def update_car_status():
+    data = request.json
+    car_id = data.get('car_id')
+    new_status = data.get('status') # 'Available', 'Rented', etc.
+    
+    if new_status not in ['Available', 'Rented', 'Maintenance']:
+        return jsonify({"status": "error", "message": "Invalid status value!"}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE Car SET Status = ? WHERE Car_ID = ?", (new_status, car_id))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success", "message": f"Car ID {car_id} status updated to {new_status} successfully!"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
