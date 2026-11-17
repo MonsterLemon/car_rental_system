@@ -69,23 +69,34 @@
         <p id="a-login-msg"></p>
     </div>
 
-    <!-- 4. Customer Dashboard -->
-    <div id="customer-dashboard" class="panel">
-        <button class="logout-btn" onclick="logout()">Logout</button>
-        <h2>Customer Dashboard</h2>
-        <h3>Available Cars for Rent</h3>
-        <button class="btn-info" onclick="loadAvailableCars()">Refresh Available Cars</button>
-        <div id="car-list" style="margin-top: 15px;">Loading cars...</div>
-        
-        <hr style="margin: 25px 0;">
-        <h3>Rent a Car</h3>
-        <input type="number" id="rent-car-id" placeholder="Enter Car ID">
-        <input type="date" id="rent-date">
-        <input type="date" id="return-date">
-        <input type="number" id="rent-days" placeholder="Total Rental Days">
-        <button class="btn-primary" onclick="bookCar()">Confirm Booking</button>
-        <p id="rent-msg"></p>
-    </div>
+  <!-- 4. Customer Dashboard -->
+        <div id="customer-dashboard" class="panel">
+            <button class="logout-btn" onclick="logout()">Logout</button>
+            <h2>Customer Dashboard</h2>
+            <h3>Available Cars for Rent</h3>
+            <button class="btn-info" onclick="loadAvailableCars()">Refresh Available Cars</button>
+            <div id="car-list" style="margin-top: 15px;">Loading cars...</div>
+            
+            <hr style="margin: 25px 0;">
+            <h3>Rent a Car</h3>
+            <input type="number" id="rent-car-id" placeholder="Enter Car ID">
+            
+            <label style="font-size: 14px; font-weight: bold; color: #555;">Rental Date:</label>
+            <input type="date" id="rent-date" onchange="calculateDays()">
+            
+            <label style="font-size: 14px; font-weight: bold; color: #555;">Return Date:</label>
+            <input type="date" id="return-date" onchange="calculateDays()">
+            
+            <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin: 8px 0; font-weight: bold;">
+                Total Rental Days: <span id="display-days" style="color: #007BFF;">0</span>
+            </div>
+            
+            <!-- Hidden input to hold days value for backend -->
+            <input type="hidden" id="rent-days" value="0">
+
+            <button class="btn-primary" onclick="bookCar()">Confirm Booking</button>
+            <p id="rent-msg"></p>
+        </div>
 
     <!-- 5. Admin Dashboard -->
     <div id="admin-dashboard" class="panel">
@@ -245,6 +256,30 @@
             msg.innerText = res.status === 'success' ? `Car booked successfully! Total Cost: $${res.total_cost}` : res.message;
             if(res.status === 'success') loadAvailableCars();
         });
+    }
+
+    // Auto calculate days between Rental Date and Return Date
+    function calculateDays() {
+        const rentDateStr = document.getElementById('rent-date').value;
+        const returnDateStr = document.getElementById('return-date').value;
+
+        if (rentDateStr && returnDateStr) {
+            const rentDate = new Date(rentDateStr);
+            const returnDate = new Date(returnDateStr);
+
+            // Calculate difference in milliseconds
+            const diffTime = returnDate - rentDate;
+            // Convert milliseconds to days
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 0) {
+                document.getElementById('display-days').innerText = diffDays;
+                document.getElementById('rent-days').value = diffDays;
+            } else {
+                document.getElementById('display-days').innerText = "Invalid Dates (Return date must be after rental date)";
+                document.getElementById('rent-days').value = 0;
+            }
+        }
     }
 
     function addCar() {
