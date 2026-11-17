@@ -35,19 +35,26 @@ def create_tables():
         )
     ''')
     
-    # Customer Table (with password for login)
+    # Customer Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS Customer (
             Customer_ID INTEGER PRIMARY KEY AUTOINCREMENT,
             First_Name TEXT NOT NULL,
             Last_Name TEXT NOT NULL,
             Email TEXT UNIQUE NOT NULL,
-            Password TEXT NOT NULL,
+            Password TEXT,
             Phone TEXT,
             Driver_License_Number TEXT UNIQUE NOT NULL,
             Address TEXT
         )
     ''')
+
+    # SAFE FIX: If Password column is missing in existing table, add it automatically
+    try:
+        cursor.execute("ALTER TABLE Customer ADD COLUMN Password TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass # Column already exists
 
     # Admin Table
     cursor.execute('''
@@ -75,7 +82,7 @@ def create_tables():
     
     conn.commit()
     
-    # Insert Default Admin (Username: admin, Password: 123)
+    # Insert Default Admin
     cursor.execute("SELECT COUNT(*) FROM Admin")
     if cursor.fetchone()[0] == 0:
         cursor.execute("INSERT INTO Admin (Username, Password) VALUES ('admin', '123')")
@@ -100,4 +107,4 @@ def create_tables():
 
 if __name__ == "__main__":
     create_tables()
-    print("Database and tables created successfully with Admin support!")
+    print("Database tables verified and updated successfully!")
