@@ -1,8 +1,12 @@
 from flask import Flask, jsonify, request, render_template
 import sqlite3
+from database import create_tables
 
 app = Flask(__name__)
 DB_NAME = "car_rental.db"
+
+# অ্যাপ স্টার্ট হওয়ার সাথে সাথে ডেটাবেজ ও টেবিল তৈরি বা আপডেট নিশ্চিত করা
+create_tables()
 
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
@@ -55,7 +59,7 @@ def customer_signup():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
 
-# --- 2. ADMIN FEATURES (Add Car, Price Update, etc.) ---
+# --- 2. ADMIN FEATURES (Add Car, Price Update, Inventory) ---
 
 @app.route('/api/admin/cars', methods=['POST'])
 def add_car():
@@ -85,6 +89,19 @@ def update_car_price():
         return jsonify({"status": "success", "message": "Car price updated successfully!"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
+
+@app.route('/api/admin/cars/all', methods=['GET'])
+def get_all_cars_admin():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT c.Car_ID, c.Make, c.Model, c.Year, c.License_Plate, c.Daily_Rate, c.Status, b.Branch_Name
+        FROM Car c
+        JOIN Branch b ON c.Branch_ID = b.Branch_ID
+    ''')
+    cars = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return jsonify(cars)
 
 # --- 3. CUSTOMER & GENERAL FEATURES ---
 
@@ -149,17 +166,3 @@ def revenue_report():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-
-    # সমস্ত গাড়ির তালিকা (স্ট্যাটাস ও প্রাইসসহ) দেখার জন্য অ্যাডমিন API
-@app.route('/api/admin/cars/all', methods=['GET'])
-def get_all_cars_admin():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT c.Car_ID, c.Make, c.Model, c.Year, c.License_Plate, c.Daily_Rate, c.Status, b.Branch_Name
-        FROM Car c
-        JOIN Branch b ON c.Branch_ID = b.Branch_ID
-    ''')
-    cars = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return jsonify(cars)
